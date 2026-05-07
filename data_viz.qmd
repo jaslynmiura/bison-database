@@ -1,0 +1,119 @@
+---
+title: "Data Visualization"
+format: html
+author: "Jaslyn Miura"
+date: 06-05-2026
+---
+
+```{r}
+library(tidyverse)
+library(DBI)
+library(dbplyr)
+library(duckdb)
+
+conn <- DBI::dbConnect(duckdb::duckdb(),
+                       dbdir = "data.db")
+
+DBI::dbListTables(conn)
+```
+
+```{r}
+herd_weight_db <- tbl(conn, "herd_weight")
+herd_weight_db
+
+maternal_parentage_db <- tbl(conn, "maternal_parentage")
+maternal_parentage_db
+
+sex_count_db <- tbl(conn, "sex_count")
+sex_count_db
+```
+
+```{r}
+table1 <- dbGetQuery(conn, 
+"SELECT mp.DamTag,
+    -- Count the distinct 'CalfTag' matched to each 'DamTag', as num_calves column.
+    COUNT(DISTINCT mp.CalfTag) AS num_calves,
+    -- Average 'AnimalWeight' from table hw.
+    AVG(hw.AnimalWeight) AS avg_calf_weight
+-- Use table mp (maternal_parentage).
+FROM maternal_parentage mp
+-- Join table hw (herd_weight) on 'CalfTag' table mp and 'AnimalCode' table hw columns.
+JOIN herd_weight hw ON mp.CalfTag = hw.AnimalCode
+    -- where 'AnimalYOB' in table hw and 'RecYear' in table hw are the same.
+    AND hw.AnimalYOB = hw.RecYear
+-- Group by 'DamTag' in table mp.
+GROUP BY mp.DamTag
+-- Order by 'num_calves' from highest to lowest.
+ORDER BY num_calves DESC
+-- Show the top 20 dams to produce the most calves.
+LIMIT 20;")
+table1
+```
+
+
+```{r}
+table2 <- dbGetQuery(conn, 
+"SELECT mp.DamTag,
+    -- Count the distinct 'CalfTag' matched to each 'DamTag', as num_calves column.
+    COUNT(DISTINCT mp.CalfTag) AS num_calves,
+    -- Average 'AnimalWeight' as avg_calf_weight.
+    AVG(calf_weight.AnimalWeight) AS avg_calf_weight,
+    -- Average 'AnimalWeight' as avg_dam_weight.
+    AVG(dam_weight.AnimalWeight) AS avg_dam_weight
+-- Use maternal_parentage as mp.
+FROM maternal_parentage mp
+-- Join calf_weight to table mp, on table mp 'CalfTag' column and table calf_weight 'AnimalCode' column.
+JOIN herd_weight calf_weight ON mp.CalfTag = calf_weight.AnimalCode
+    -- Where 'AnimalYOB' and 'RecYear' of calf_weight are the same.
+    AND calf_weight.AnimalYOB = calf_weight.RecYear
+-- Join dam_weight to table mp, on table mp on 'DamTag' column and table dam_weight 'AnimalCode' column.
+JOIN herd_weight dam_weight ON mp.DamTag = dam_weight.AnimalCode
+-- Group by table mp 'DamTag' column.
+GROUP BY mp.DamTag
+-- Order by 'num_calves' column from highest to lowest.
+ORDER BY num_calves DESC
+-- Show the top 20 dams to produce the most calves.
+LIMIT 20;")
+table2
+```
+
+```{r}
+# Create a table displaying average calf weight.
+table1 %>% 
+  arrange(avg_calf_weight) %>%
+  # factor order by name to maintain descending order of characters
+  mutate(DamTag = factor(DamTag, levels = DamTag)) %>%  
+  # initialize ggplot 
+ggplot(aes(x = avg_calf_weight, y = DamTag )) + 
+  geom_col()
+```
+
+```{r}
+# Create a table displaying average dam weight.
+table2 %>% 
+  arrange(avg_dam_weight) %>%
+  # factor order by name to maintain descending order of characters
+  mutate(DamTag = factor(DamTag, levels = DamTag)) %>%  
+  # initialize ggplot 
+ggplot(aes(x = avg_dam_weight, y = DamTag )) + 
+  geom_col()
+```
+
+
+```{r}
+# Create a table displaying average dam weight by the number of calves.
+table2 %>% 
+  arrange(num_calves) %>%
+  # factor order by name to maintain descending order of characters
+  mutate(DamTag = factor(DamTag, levels = DamTag)) %>%  
+  # initialize ggplot 
+ggplot(aes(x = avg_dam_weight, y = DamTag )) + 
+  geom_col()
+```
+
+
+## Close your connection
+
+```{r}
+DBI::dbDisconnect(conn, shutdown = TRUE)
+```

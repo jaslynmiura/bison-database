@@ -1,6 +1,6 @@
 # Konza Prairie Bison Herd Database (Kansas, USA)
 
-![](images/bison_yellowstone.jpeg)
+![](images/bison.png)
 
 ### Purpose:
 This repository houses the SQL analysis of Bison Herd Dynamics. Data was first cleaned in an R-script.
