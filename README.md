@@ -1,35 +1,27 @@
 # Konza Prairie Bison Herd Database (Kansas, USA)
-
 ![](images/bison.png)
 
 ### Purpose:
-This repository houses the SQL analysis of Bison Herd Dynamics. Data was first cleaned in an R-script.
+This repository houses the code used to build a database about the Konza Prairie Bison Herd. The database integrates information about individual weight measurements, sex distributions, and maternal-calf parentage relationships. It also contains filed used to query the database and create a data visualization to answer the question: 
+
+#### ***Which dams produced the most calves, and what was the average (end of season) weight of their offspring?***
 
 ### Data Visualization
-
-### Database Schema
+![](images/num_calves_af.png)
 
 ### Repository Structure:
 ```
 .
-├── README.md
 ├── data
-│   ├── df1_cleaned.csv
-│   ├── df2_cleaned.csv
-│   ├── df3_cleaned.csv
-│   └── konza_prairie_bison
-│       ├── CBH011.csv
-│       ├── CBH012.csv
-│       ├── CBH013.csv
-│       └── metadata
-│           ├── knb-lter-knz.78.17.report.xml
-│           ├── knb-lter-knz.78.17.txt
-│           ├── knb-lter-knz.78.17.xml
-│           └── manifest.txt
-├── data.db
-├── dataset_cleaning.qmd
+│   ├── cleaned-data            # Cleaned data
+│   └── konza-prairie-bison     # Raw data
+├── data_viz.qmd                # Script to create visualization
+├── data.db                     # Database
+├── dataset_cleaning.qmd        # Script to clean raw data
 ├── eds213-database-final.Rproj
-└── final.sql
+├── images
+├── query.sql                   # Script to query the database
+└── README.md
 ```
 
 ### Data Access:
@@ -44,4 +36,4 @@ Blair, J. 2026. CBH01 Konza Prairie bison herd information ver 17. Environmental
 Jaslyn Miura
 
 ### Acknowledgments
-The material for this assignment was presented by TA Annie Adams in the course Databases and Data Management (EDS 213) at the Bren School of Environmental Science & Management, Spring 2024. The instructors of this course were Julien Brun and Greg Janée.
+The material for this assignment was presented by TA Annie Adams in the course Databases and Data Management (EDS 213) at the Bren School of Environmental Science & Management, Spring 2026. The instructors of this course were Julien Brun, Greg Janée, Renata Curty.
