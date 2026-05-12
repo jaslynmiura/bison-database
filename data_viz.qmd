@@ -10,12 +10,21 @@ library(tidyverse)
 library(DBI)
 library(dbplyr)
 library(duckdb)
+library(showtext)
+library(ggimage)
 
 conn <- DBI::dbConnect(duckdb::duckdb(),
                        dbdir = "data.db")
 
 DBI::dbListTables(conn)
 ```
+
+```{r}
+# add special fonts
+font_add_google(name = "Rye", family = "rye") 
+showtext_opts(dpi = 300)
+```
+
 
 ```{r}
 herd_weight_db <- tbl(conn, "herd_weight")
@@ -45,8 +54,8 @@ JOIN herd_weight hw ON mp.CalfTag = hw.AnimalCode
 GROUP BY mp.DamTag
 -- Order by 'num_calves' from highest to lowest.
 ORDER BY num_calves DESC
--- Show the top 20 dams to produce the most calves.
-LIMIT 20;")
+-- Show the top 10 dams to produce the most calves.
+LIMIT 10;")
 table1
 ```
 
@@ -72,45 +81,64 @@ JOIN herd_weight dam_weight ON mp.DamTag = dam_weight.AnimalCode
 GROUP BY mp.DamTag
 -- Order by 'num_calves' column from highest to lowest.
 ORDER BY num_calves DESC
--- Show the top 20 dams to produce the most calves.
-LIMIT 20;")
+-- Show the top 10 dams to produce the most calves.
+LIMIT 10;")
 table2
 ```
 
-```{r}
-# Create a table displaying average calf weight.
-table1 %>% 
-  arrange(avg_calf_weight) %>%
-  # factor order by name to maintain descending order of characters
-  mutate(DamTag = factor(DamTag, levels = DamTag)) %>%  
-  # initialize ggplot 
-ggplot(aes(x = avg_calf_weight, y = DamTag )) + 
-  geom_col()
-```
 
 ```{r}
-# Create a table displaying average dam weight.
-table2 %>% 
-  arrange(avg_dam_weight) %>%
-  # factor order by name to maintain descending order of characters
-  mutate(DamTag = factor(DamTag, levels = DamTag)) %>%  
-  # initialize ggplot 
-ggplot(aes(x = avg_dam_weight, y = DamTag )) + 
-  geom_col()
+showtext.auto(enable = TRUE)
+
+num_calves <- table2 %>%
+  mutate(DamTag = as.character(DamTag)) %>%
+  arrange(desc(num_calves)) %>%
+  mutate(DamTag = factor(DamTag, levels = DamTag)) %>%
+  ggplot(aes(x = DamTag)) +
+  geom_linerange(aes(ymin = 0, ymax = avg_calf_weight, color = "Average Calf Weight"),
+                 linewidth = 2, 
+                 position = position_nudge(x = -0.25)) +
+  geom_image(aes(y = avg_calf_weight, image = "images/calf.png"), 
+             size = 0.1,
+             position = position_nudge(x = -0.3)) + 
+  geom_text(aes(y = avg_calf_weight, label = num_calves),
+           color = "black", 
+           size = 4.5, 
+           fontface = "bold",
+           family = "rye",
+           position = position_nudge(x = -0.25, y = 10)) +
+  geom_linerange(aes(ymin = 0, ymax = avg_dam_weight, color = "Average Bison Cow Weight"),
+                 linewidth = 2, 
+                 position = position_nudge(x = 0.22)) +
+  geom_image(aes(y = avg_dam_weight, image = "images/mama.png"), 
+             size = 0.1,
+             position = position_nudge(x = 0.3)) +
+  scale_color_manual(values = c("Average Calf Weight" = "#C49BBB",
+                                "Average Bison Cow Weight"  = "#784F41")) +
+  labs(x = NULL, y = "Weight (lbs)", color = NULL) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(family = "rye"),
+    legend.text = element_text(family = "rye"),
+    axis.text = element_text(family = "rye"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top",
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank()
+    )
+
+num_calves
+
+ggsave("images/num_calves.pdf", 
+       plot = num_calves,
+       height = 7,
+       width = 10,
+       dpi = 300)
+ggsave("images/num_calves.png", 
+       plot = num_calves,
+       height = 7,
+       width = 10)
 ```
-
-
-```{r}
-# Create a table displaying average dam weight by the number of calves.
-table2 %>% 
-  arrange(num_calves) %>%
-  # factor order by name to maintain descending order of characters
-  mutate(DamTag = factor(DamTag, levels = DamTag)) %>%  
-  # initialize ggplot 
-ggplot(aes(x = avg_dam_weight, y = DamTag )) + 
-  geom_col()
-```
-
 
 ## Close your connection
 
