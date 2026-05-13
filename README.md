@@ -22,6 +22,7 @@ bison-database
 ├── images
 ├── query.sql                     # Script to query the database
 └── README.md
+└── requirements.txt              # Dependencies file
 ```
 
 ### Data Access:
