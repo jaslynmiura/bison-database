@@ -5,14 +5,24 @@ author: "Jaslyn Miura"
 date: 06-05-2026
 ---
 
-```{r}
+## Question:
+
+Which dams produced the most calves, and what was the average (end of season) weight of their offspring?
+
+## Connecting to the Bison Database
+
+```{r, message=FALSE, warning=FALSE}
+# Load in necessary libraries.
 library(tidyverse)
 library(DBI)
 library(dbplyr)
 library(duckdb)
 library(showtext)
 library(ggimage)
+```
 
+```{r}
+# Connect to bison database.
 conn <- DBI::dbConnect(duckdb::duckdb(),
                        dbdir = "data.db")
 
@@ -20,13 +30,7 @@ DBI::dbListTables(conn)
 ```
 
 ```{r}
-# add special fonts
-font_add_google(name = "Rye", family = "rye") 
-showtext_opts(dpi = 300)
-```
-
-
-```{r}
+# Load the tables in the database.
 herd_weight_db <- tbl(conn, "herd_weight")
 herd_weight_db
 
@@ -37,7 +41,56 @@ sex_count_db <- tbl(conn, "sex_count")
 sex_count_db
 ```
 
+## Query the Bison Database.
+
+The two SQL queries I used obtain the data i needed to create my visualization and answer my question:
+
+```
+SELECT mp.DamTag,
+    -- Count the distinct 'CalfTag' matched to each 'DamTag', as num_calves column.
+    COUNT(DISTINCT mp.CalfTag) AS num_calves,
+    -- Average 'AnimalWeight' from table hw.
+    AVG(hw.AnimalWeight) AS avg_calf_weight
+-- Use table mp (maternal_parentage).
+FROM maternal_parentage mp
+-- Join table hw (herd_weight) on 'CalfTag' table mp and 'AnimalCode' table hw columns.
+JOIN herd_weight hw ON mp.CalfTag = hw.AnimalCode
+    -- where 'AnimalYOB' in table hw and 'RecYear' in table hw are the same.
+    AND hw.AnimalYOB = hw.RecYear
+-- Group by 'DamTag' in table mp.
+GROUP BY mp.DamTag
+-- Order by 'num_calves' from highest to lowest.
+ORDER BY num_calves DESC
+-- Show the top 10 dams to produce the most calves.
+LIMIT 10;
+```
+
+```
+SELECT mp.DamTag,
+    -- Count the distinct 'CalfTag' matched to each 'DamTag', as num_calves column.
+    COUNT(DISTINCT mp.CalfTag) AS num_calves,
+    -- Average 'AnimalWeight' as avg_calf_weight.
+    AVG(calf_weight.AnimalWeight) AS avg_calf_weight,
+    -- Average 'AnimalWeight' as avg_dam_weight.
+    AVG(dam_weight.AnimalWeight) AS avg_dam_weight
+-- Use maternal_parentage as mp.
+FROM maternal_parentage mp
+-- Join calf_weight to table mp, on table mp 'CalfTag' column and table calf_weight 'AnimalCode' column.
+JOIN herd_weight calf_weight ON mp.CalfTag = calf_weight.AnimalCode
+    -- Where 'AnimalYOB' and 'RecYear' of calf_weight are the same.
+    AND calf_weight.AnimalYOB = calf_weight.RecYear
+-- Join dam_weight to table mp, on table mp on 'DamTag' column and table dam_weight 'AnimalCode' column.
+JOIN herd_weight dam_weight ON mp.DamTag = dam_weight.AnimalCode
+-- Group by table mp 'DamTag' column.
+GROUP BY mp.DamTag
+-- Order by 'num_calves' column from highest to lowest.
+ORDER BY num_calves DESC
+-- Show the top 10 dams to produce the most calves.
+LIMIT 10
+```
+
 ```{r}
+# Using the DBI connection, query the bison database.
 table1 <- dbGetQuery(conn, 
 "SELECT mp.DamTag,
     -- Count the distinct 'CalfTag' matched to each 'DamTag', as num_calves column.
@@ -59,8 +112,8 @@ LIMIT 10;")
 table1
 ```
 
-
 ```{r}
+# Using the DBI connection, query the bison database.
 table2 <- dbGetQuery(conn, 
 "SELECT mp.DamTag,
     -- Count the distinct 'CalfTag' matched to each 'DamTag', as num_calves column.
@@ -86,36 +139,56 @@ LIMIT 10;")
 table2
 ```
 
+## Data Visualization
+
+```{r}
+# Add special fonts.
+font_add_google(name = "Rye", family = "rye") 
+showtext_opts(dpi = 300)
+```
 
 ```{r}
 showtext.auto(enable = TRUE)
 
+# Create line range plot to visualize bison weights.
 num_calves <- table2 %>%
+  # Convert `DamTag` to character to remove current factor level ordering.
   mutate(DamTag = as.character(DamTag)) %>%
-  arrange(desc(num_calves)) %>%
+  # Order rows by the highest number of calves to the lowest.
+  arrange(desc(avg_calf_weight)) %>%
+  # Convert `DamTag` to a factor for level sorting, based on arrange().
   mutate(DamTag = factor(DamTag, levels = DamTag)) %>%
+  # Plot `DamTag`.
   ggplot(aes(x = DamTag)) +
+  # Create line range of average calf weight.
   geom_linerange(aes(ymin = 0, ymax = avg_calf_weight, color = "Average Calf Weight"),
                  linewidth = 2, 
                  position = position_nudge(x = -0.25)) +
+  # Add calf icon to the end of the line range.
   geom_image(aes(y = avg_calf_weight, image = "images/calf.png"), 
              size = 0.1,
              position = position_nudge(x = -0.3)) + 
-  geom_text(aes(y = avg_calf_weight, label = num_calves),
-           color = "black", 
-           size = 4.5, 
-           fontface = "bold",
-           family = "rye",
-           position = position_nudge(x = -0.25, y = 10)) +
+  # Add the number of calves produced.
+  # geom_text(aes(y = avg_calf_weight, label = num_calves),
+  #          color = "black", 
+  #          size = 4.5, 
+  #          fontface = "bold",
+  #          family = "rye",
+  #          position = position_nudge(x = -0.25, y = 10)) +
+  # Create line range of average dam weight.
   geom_linerange(aes(ymin = 0, ymax = avg_dam_weight, color = "Average Bison Cow Weight"),
                  linewidth = 2, 
                  position = position_nudge(x = 0.22)) +
+  # Add bison icon to the end of the line range.
   geom_image(aes(y = avg_dam_weight, image = "images/mama.png"), 
              size = 0.1,
              position = position_nudge(x = 0.3)) +
+  # Customize the colors.
   scale_color_manual(values = c("Average Calf Weight" = "#C49BBB",
                                 "Average Bison Cow Weight"  = "#784F41")) +
+  # Add axis labels.
   labs(x = NULL, y = "Weight (lbs)", color = NULL) +
+  # Theme elements.
   theme_minimal() +
   theme(
     axis.title = element_text(family = "rye"),
@@ -127,20 +200,24 @@ num_calves <- table2 %>%
     panel.grid.major.x = element_blank()
     )
 
+# View plot.
 num_calves
 
+# Save the plot as a PDF.
 ggsave("images/num_calves.pdf", 
        plot = num_calves,
        height = 7,
-       width = 10,
+       width = 12,
        dpi = 300)
+
+# Save the plot as a PNG.
 ggsave("images/num_calves.png", 
        plot = num_calves,
        height = 7,
-       width = 10)
+       width = 12)
 ```
 
-## Close your connection
+## Close the database connection
 
 ```{r}
 DBI::dbDisconnect(conn, shutdown = TRUE)
