@@ -7,7 +7,7 @@ This repository houses the code used to build a database about the Konza Prairie
 #### ***Which dams produced the most calves, and what was the average (end of season) weight of their offspring?***
 
 ### Data Visualization
-![](images/num_calves_final.png)
+![](images/num_calves_final.png) 
 
 ### Repository Structure:
 ```
