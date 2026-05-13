@@ -7,7 +7,7 @@ date: 06-05-2026
 
 ## Question:
 
-Which dams produced the most calves, and what was the average (end of season) weight of their offspring?
+What is the average (end of season) weight of bison cows and their offspring?
 
 ## Connecting to the Bison Database
 
@@ -138,6 +138,7 @@ ORDER BY num_calves DESC
 LIMIT 10;")
 table2
 ```
+
 
 ## Data Visualization
 

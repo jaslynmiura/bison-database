@@ -4,7 +4,7 @@
 ### Purpose:
 This repository houses the code used to build a database about the Konza Prairie Bison Herd. The database integrates information about individual weight measurements, sex distributions, and maternal-calf parentage relationships. It also contains files used to query the database and create a data visualization to answer the question: 
 
-#### ***Which dams produced the most calves, and what was the average (end of season) weight of their offspring?***
+#### ***What is the average (end of season) weight of bison cows and their offspring?***
 
 ### Data Visualization
 ![](images/num_calves_final.png)
